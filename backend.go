@@ -33,9 +33,6 @@ type SingleResHealpix struct {
 //	return h.order
 //}
 
-type Table struct {
-}
-
 type Backend interface {
 	CreateTable(*CreateTableStatement) error
 	//AlterTable(*AlterTableStatement) error

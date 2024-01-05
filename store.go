@@ -105,6 +105,7 @@ type Store struct {
 	Name      string   `json:"-"`
 	ColumnSet []Column `json:"columns"`
 	Rows      int      `json:"rows"`
+	path      string
 	file      *Pagemaster
 
 	columnMap   map[string]ColumnProjection // A way to quickly access the data mapping for a particular column name
@@ -143,6 +144,7 @@ func NewStore(path string, rows int, columns []Column) (*Store, error) {
 		Name:      name,
 		ColumnSet: columns,
 		file:      pagemaster,
+		path:      path,
 		Rows:      rows,
 
 		columnMap:   nil,
@@ -228,6 +230,10 @@ func initColumnMap(columns []Column) map[string]ColumnProjection {
 	return columnMap
 }
 
+func (s *Store) Path() string {
+	return s.path
+}
+
 func (s *Store) RowSize() int {
 	return s.rowSize
 }
@@ -258,6 +264,10 @@ func (s *Store) SetRowAt(index int, row RawRow) error {
 
 func (s *Store) Checkpoint() error {
 	return s.file.FlushAllPages()
+}
+
+func (s *Store) Drop() error {
+	return os.RemoveAll(s.path)
 }
 
 func (s *Store) Projection(columns ...string) (Projection, error) {

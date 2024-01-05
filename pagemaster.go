@@ -10,6 +10,8 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// TODO: consider using DirectIO for page reads? https://github.com/ncw/directio/blob/master/direct_io.go
+
 // 4 bytes for int32 checksum in each page
 const ChecksumSize int = 4
 
