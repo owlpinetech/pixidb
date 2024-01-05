@@ -170,8 +170,8 @@ func (p *Pagemaster) SetChunk(pageIndex int, offset int, chunk []byte) error {
 // action is taken. If the write is unsuccessful, the page dirtiness status
 // will be left unchanged.
 func (p *Pagemaster) FlushPage(pageIndex int) error {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	page, ok := p.cache[pageIndex]
 	if !ok {
 		return nil
@@ -189,8 +189,8 @@ func (p *Pagemaster) FlushPage(pageIndex int) error {
 // clean. The page on which the write errored, and the remaining dirty pages, will
 // still be marked dirty if the managing process wants to retry flushing.
 func (p *Pagemaster) FlushAllPages() error {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	for id, page := range p.cache {
 		if page.dirty {
 			err := p.writePage(id, page.data)

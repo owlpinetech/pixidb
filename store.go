@@ -16,40 +16,40 @@ type RawValue []byte
 type ColumnType int16
 
 const (
-	FieldTypeInt8 ColumnType = iota
-	FieldTypeUint8
-	FieldTypeInt16
-	FieldTypeUint16
-	FieldTypeInt32
-	FieldTypeUint32
-	FieldTypeInt64
-	FieldTypeUint64
-	FieldTypeFloat32
-	FieldTypeFloat64
+	ColumnTypeInt8 ColumnType = iota
+	ColumnTypeUint8
+	ColumnTypeInt16
+	ColumnTypeUint16
+	ColumnTypeInt32
+	ColumnTypeUint32
+	ColumnTypeInt64
+	ColumnTypeUint64
+	ColumnTypeFloat32
+	ColumnTypeFloat64
 )
 
 // The size in bytes of this particular column type.
 func (c ColumnType) Size() int {
 	switch c {
-	case FieldTypeInt8:
+	case ColumnTypeInt8:
 		fallthrough
-	case FieldTypeUint8:
+	case ColumnTypeUint8:
 		return 1
-	case FieldTypeInt16:
+	case ColumnTypeInt16:
 		fallthrough
-	case FieldTypeUint16:
+	case ColumnTypeUint16:
 		return 2
-	case FieldTypeInt32:
+	case ColumnTypeInt32:
 		fallthrough
-	case FieldTypeUint32:
+	case ColumnTypeUint32:
 		fallthrough
-	case FieldTypeFloat32:
+	case ColumnTypeFloat32:
 		return 4
-	case FieldTypeInt64:
+	case ColumnTypeInt64:
 		fallthrough
-	case FieldTypeUint64:
+	case ColumnTypeUint64:
 		fallthrough
-	case FieldTypeFloat64:
+	case ColumnTypeFloat64:
 		return 8
 	}
 	return 0
@@ -246,14 +246,14 @@ func (s *Store) DefaultRow() []byte {
 
 func (s *Store) GetRowAt(index int) (RawRow, error) {
 	pageIndex := index / s.rowsPerPage
-	rowOffset := index % s.rowsPerPage
-	return s.file.GetChunk(pageIndex, rowOffset*s.rowSize, s.rowSize)
+	rowOffset := (index % s.rowsPerPage) * s.rowSize
+	return s.file.GetChunk(pageIndex, rowOffset, s.rowSize)
 }
 
 func (s *Store) SetRowAt(index int, row RawRow) error {
 	pageIndex := index / s.rowsPerPage
-	rowOffset := index % s.rowsPerPage
-	return s.file.SetChunk(pageIndex, rowOffset*s.rowSize, row)
+	rowOffset := (index % s.rowsPerPage) * s.rowSize
+	return s.file.SetChunk(pageIndex, rowOffset, row)
 }
 
 func (s *Store) Checkpoint() error {

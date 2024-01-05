@@ -21,16 +21,16 @@ func TestBasicCreate(t *testing.T) {
 		expectRowSize     int
 		expectRowsPerPage int
 	}{
-		{"simple", 1, []Column{NewColumn("hello", FieldTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
+		{"simple", 1, []Column{NewColumn("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
 		{"twocolumn", 10, []Column{
-			NewColumn("one", FieldTypeInt16, []byte{0, 1}),
-			NewColumn("two", FieldTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
+			NewColumn("one", ColumnTypeInt16, []byte{0, 1}),
+			NewColumn("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
 		}, 10, (os.Getpagesize() - ChecksumSize) / 10},
 		{"fourcolumn", 1000, []Column{
-			NewColumn("one", FieldTypeInt32, []byte{0, 1, 2, 3}),
-			NewColumn("two", FieldTypeInt32, []byte{5, 6, 7, 8}),
-			NewColumn("three", FieldTypeInt32, []byte{4, 9, 2, 9}),
-			NewColumn("four", FieldTypeInt32, []byte{6, 6, 6, 6}),
+			NewColumn("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
+			NewColumn("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
+			NewColumn("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
+			NewColumn("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
 		}, 16, (os.Getpagesize() - ChecksumSize) / 16},
 	}
 
@@ -76,16 +76,16 @@ func TestBasicOpen(t *testing.T) {
 		expectRowSize     int
 		expectRowsPerPage int
 	}{
-		{"simple", 1, []Column{NewColumn("hello", FieldTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
+		{"simple", 1, []Column{NewColumn("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
 		{"twocolumn", 10, []Column{
-			NewColumn("one", FieldTypeInt16, []byte{0, 1}),
-			NewColumn("two", FieldTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
+			NewColumn("one", ColumnTypeInt16, []byte{0, 1}),
+			NewColumn("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
 		}, 10, (os.Getpagesize() - ChecksumSize) / 10},
 		{"fourcolumn", 1000, []Column{
-			NewColumn("one", FieldTypeInt32, []byte{0, 1, 2, 3}),
-			NewColumn("two", FieldTypeInt32, []byte{5, 6, 7, 8}),
-			NewColumn("three", FieldTypeInt32, []byte{4, 9, 2, 9}),
-			NewColumn("four", FieldTypeInt32, []byte{6, 6, 6, 6}),
+			NewColumn("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
+			NewColumn("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
+			NewColumn("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
+			NewColumn("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
 		}, 16, (os.Getpagesize() - ChecksumSize) / 16},
 	}
 
@@ -123,15 +123,64 @@ func TestBasicOpen(t *testing.T) {
 }
 
 func TestBasicSetPersist(t *testing.T) {
+	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_store_basic_set_persist")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
 
+	testCases := []struct {
+		name    string
+		rows    int
+		columns []Column
+		setRow  []byte
+	}{
+		{"simple", 1, []Column{NewColumn("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, []byte{9, 9, 9, 9}},
+		{"twocolumn", 10, []Column{
+			NewColumn("one", ColumnTypeInt16, []byte{0, 1}),
+			NewColumn("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
+		}, []byte{7, 7, 4, 4, 5, 5, 6, 6, 7, 7}},
+		{"fourcolumn", 1000, []Column{
+			NewColumn("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
+			NewColumn("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
+			NewColumn("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
+			NewColumn("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
+		}, []byte{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			store.SetRowAt(0, tc.setRow)
+			store.SetRowAt(store.Rows-1, tc.setRow)
+			store.Checkpoint()
+
+			saved, err := OpenStore(filepath.Join(dir, tc.name))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defRow := store.DefaultRow()
+
+			compareRow(t, saved, 0, tc.setRow)
+			compareRow(t, saved, saved.Rows-1, tc.setRow)
+			if saved.Rows > 2 {
+				compareRow(t, saved, saved.Rows/2, defRow)
+			}
+		})
+	}
 }
 
 func compareRow(t *testing.T, store *Store, row int, expect []byte) {
-	actual, err := store.GetRowAt(0)
+	actual, err := store.GetRowAt(row)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if slices.Compare(expect, actual) != 0 {
-		t.Errorf("expected first row to equal default row %v, got %v", expect, actual)
+		t.Errorf("expected row %d to equal row %v, got %v", row, expect, actual)
 	}
 }
