@@ -1,22 +1,7 @@
 package pixidb
 
-type ColumnType int16
-
-const (
-	FieldTypeInt8 ColumnType = iota
-	FieldTypeUint8
-	FieldTypeInt16
-	FieldTypeUint16
-	FieldTypeInt32
-	FieldTypeUint32
-	FieldTypeInt64
-	FieldTypeUint64
-	FieldTypeFloat32
-	FieldTypeFloat64
-)
-
 // A non-decomposable value in the table, one 'cell' of memory/storage.
-type Field interface {
+type Value interface {
 	AsInt8() int8
 	AsUint8() uint8
 	AsInt16() int16
@@ -29,35 +14,62 @@ type Field interface {
 	AsFloat64() float64
 }
 
-// The metadata that describes a field in the table.
-type Column struct {
-	Type ColumnType
-	Name string
-}
-
-type ResultRow []Field
+type ResultRow []Value
 
 type ResultSet struct {
 	Columns []Column
 	Rows    []ResultRow
 }
 
+type Config interface {
+	Rows() uint64
+}
+
+type SingleResHealpix struct {
+	order int
+}
+
+//func (h SingleResHealpix) Rows() {
+//	return h.order
+//}
+
+type Table struct {
+}
+
 type Backend interface {
 	CreateTable(*CreateTableStatement) error
-	AlterTable(*AlterTableStatement) error
-	DropTable(*DropTableStatement) error
+	//AlterTable(*AlterTableStatement) error
+	//DropTable(*DropTableStatement) error
 	Select(*SelectStatement) (*ResultSet, error)
 	Update(*UpdateStatement) error
-	CreateShape(*CreateShapeStatement) error
-	DropShape(*DropShapeStatement) error
-	AlterShape(*AlterShapeStatement) error
-	CreateUser(*CreateUserStatement) error
-	DropUser(*DropUserStatement) error
-	AlterUser(*AlterUserStatement) error
+	//CreateShape(*CreateShapeStatement) error
+	//DropShape(*DropShapeStatement) error
+	//AlterShape(*AlterShapeStatement) error
+	//CreateUser(*CreateUserStatement) error
+	//DropUser(*DropUserStatement) error
+	//AlterUser(*AlterUserStatement) error
 }
 
 type CreateTableStatement struct {
-	Name       string
-	Columns    []Column
-	Projection Projection
+	Name     string
+	Columns  []Column
+	PageSize int
+	Config   Config
+}
+
+type SelectStatement struct {
+	Table     string
+	Columns   []string
+	Locations []LocationClause
+	//Filters   []FilterClause
+}
+
+type UpdateStatement struct {
+	Table   string
+	Columns []string
+	Values  [][]Value
+}
+
+type LocationClause interface {
+	//[]Row Access()
 }

@@ -1,0 +1,6 @@
+github.com/owlpinetech/flatsphere v0.0.1 h1:rSkNlKx/YNzw6QyZcQhDGuLoN2RJugxDoyeTRThHD7E=
+github.com/owlpinetech/flatsphere v0.0.1/go.mod h1:Wc+2RhBlT09wCtZ1+Jc4CBYfUBnxs2vwSMaQRDFFWF8=
+github.com/owlpinetech/healpix v0.1.1 h1:WYut1AKA4vsJ/Re3722TrfkBFjbCzRzi2fepxXWb42w=
+github.com/owlpinetech/healpix v0.1.1/go.mod h1:kK3KVghwpwnEOhaISgHvVsAmeOz+lk0MGvUln4gO6+I=
+golang.org/x/exp v0.0.0-20231226003508-02704c960a9b h1:kLiC65FbiHWFAOu+lxwNPujcsl8VYyTYYEZnsOO1WK4=
+golang.org/x/exp v0.0.0-20231226003508-02704c960a9b/go.mod h1:iRJReGqOEeBhDZGkGbynYwcHlctCvnjTYIamk7uXpHI=
