@@ -54,3 +54,55 @@ func TestTableOpen(t *testing.T) {
 		})
 	}
 }
+
+func TestTableQuery(t *testing.T) {
+	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_table_basic_query")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewFlatHealpixIndexer(2, healpix.NestScheme),
+		[]Column{
+			{Name: "col1", Type: ColumnTypeInt32, Default: []byte{0, 0, 0, 3}},
+			{Name: "col2", Type: ColumnTypeInt16, Default: []byte{0, 6}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := tbl.GetRows([]string{"col1"}, IndexLocation(0), IndexLocation(1), IndexLocation(2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range res.Columns {
+		if c.Name != "col1" {
+			t.Errorf("expected column name to be col1, got %s", c.Name)
+		}
+	}
+	if len(res.Rows) != 3 {
+		t.Errorf("expected to get 3 result rows, got %d", len(res.Rows))
+	}
+	for _, r := range res.Rows {
+		if r[0].AsInt32() != 3 {
+			t.Errorf("expected row to equal 3, got %d", r[0].AsInt32())
+		}
+	}
+
+	res, err = tbl.GetRows([]string{"col2"}, IndexLocation(3), IndexLocation(4), IndexLocation(5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range res.Columns {
+		if c.Name != "col2" {
+			t.Errorf("expected column name to be col2, got %s", c.Name)
+		}
+	}
+	if len(res.Rows) != 3 {
+		t.Errorf("expected to get 3 result rows, got %d", len(res.Rows))
+	}
+	for _, r := range res.Rows {
+		if r[0].AsInt16() != 6 {
+			t.Errorf("expected row to equal 3, got %d", r[0].AsInt16())
+		}
+	}
+}

@@ -1,15 +1,13 @@
 package pixidb
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 )
-
-type RawRow []byte
-
-type RawValue []byte
 
 // Type representing the PixiDB 'types' of values that can be stored
 // in a field in a table. These types are the 'atomic' types of PixiDB.
@@ -59,10 +57,10 @@ func (c ColumnType) Size() int {
 type Column struct {
 	Name    string
 	Type    ColumnType
-	Default RawValue
+	Default Value
 }
 
-func NewColumn(name string, ctype ColumnType, defval RawValue) Column {
+func NewColumn(name string, ctype ColumnType, defval Value) Column {
 	if len(defval) != ctype.Size() {
 		panic("pixidb: default value size does not match specified column size")
 	}
@@ -79,15 +77,12 @@ func (c Column) Size() int {
 }
 
 type ColumnProjection struct {
+	index int
 	start int
 	size  int
 }
 
 type Projection []ColumnProjection
-
-type Row interface {
-	Project(Projection) []Value
-}
 
 const (
 	DataFileExt     = ".dat"
@@ -223,8 +218,8 @@ func OpenStore(path string) (*Store, error) {
 func initColumnMap(columns []Column) map[string]ColumnProjection {
 	columnMap := make(map[string]ColumnProjection)
 	columnOffset := 0
-	for _, c := range columns {
-		columnMap[c.Name] = ColumnProjection{columnOffset, c.Size()}
+	for i, c := range columns {
+		columnMap[c.Name] = ColumnProjection{i, columnOffset, c.Size()}
 		columnOffset += c.Size()
 	}
 	return columnMap
@@ -250,13 +245,21 @@ func (s *Store) DefaultRow() []byte {
 	return defaultRow
 }
 
-func (s *Store) GetRowAt(index int) (RawRow, error) {
+func (s *Store) FilterColumns(proj Projection) []Column {
+	columns := make([]Column, len(proj))
+	for i, p := range proj {
+		columns[i] = s.ColumnSet[p.index]
+	}
+	return columns
+}
+
+func (s *Store) GetRowAt(index int) (Row, error) {
 	pageIndex := index / s.rowsPerPage
 	rowOffset := (index % s.rowsPerPage) * s.rowSize
 	return s.file.GetChunk(pageIndex, rowOffset, s.rowSize)
 }
 
-func (s *Store) SetRowAt(index int, row RawRow) error {
+func (s *Store) SetRowAt(index int, row Row) error {
 	pageIndex := index / s.rowsPerPage
 	rowOffset := (index % s.rowsPerPage) * s.rowSize
 	return s.file.SetChunk(pageIndex, rowOffset, row)
@@ -267,6 +270,7 @@ func (s *Store) Checkpoint() error {
 }
 
 func (s *Store) Drop() error {
+	s.file.ClearCache()
 	return os.RemoveAll(s.path)
 }
 
@@ -280,4 +284,56 @@ func (s *Store) Projection(columns ...string) (Projection, error) {
 		}
 	}
 	return proj, nil
+}
+
+type Row []byte
+
+func (r Row) Project(proj Projection) []Value {
+	vals := make([]Value, len(proj))
+	for i, column := range proj {
+		vals[i] = Value(r[column.start : column.start+column.size])
+	}
+	return vals
+}
+
+type Value []byte
+
+func (v Value) AsInt8() int8 {
+	return int8(v[0])
+}
+
+func (v Value) AsUint8() uint8 {
+	return uint8(v[0])
+}
+
+func (v Value) AsInt16() int16 {
+	return int16(binary.BigEndian.Uint16(v))
+}
+
+func (v Value) AsUint16() uint16 {
+	return binary.BigEndian.Uint16(v)
+}
+
+func (v Value) AsInt32() int32 {
+	return int32(binary.BigEndian.Uint32(v))
+}
+
+func (v Value) AsUint32() uint32 {
+	return binary.BigEndian.Uint32(v)
+}
+
+func (v Value) AsInt64() int64 {
+	return int64(binary.BigEndian.Uint64(v))
+}
+
+func (v Value) AsUint64() uint64 {
+	return binary.BigEndian.Uint64(v)
+}
+
+func (v Value) AsFloat32() float32 {
+	return math.Float32frombits(binary.BigEndian.Uint32(v))
+}
+
+func (v Value) AsFloat64() float64 {
+	return math.Float64frombits(binary.BigEndian.Uint64(v))
 }

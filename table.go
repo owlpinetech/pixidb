@@ -10,6 +10,11 @@ import (
 
 const TableFileExt string = ".tbl.json"
 
+type ResultSet struct {
+	Columns []Column
+	Rows    [][]Value
+}
+
 type Table struct {
 	store       *Store
 	Indexer     LocationIndexer   `json:"indexer"`
@@ -149,4 +154,58 @@ func (t *Table) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+func (t *Table) Drop() error {
+	return t.store.Drop()
+}
+
+func (t *Table) GetRows(projectedColumns []string, locations ...Location) (ResultSet, error) {
+	columnProj, err := t.store.Projection(projectedColumns...)
+	if err != nil {
+		return ResultSet{}, err
+	}
+	rows := make([][]Value, len(locations))
+	for i, loc := range locations {
+		locIndex, err := t.Indexer.ToIndex(loc)
+		if err != nil {
+			return ResultSet{}, err
+		}
+		rawRow, err := t.store.GetRowAt(locIndex)
+		if err != nil {
+			return ResultSet{}, err
+		}
+		projRow := rawRow.Project(columnProj)
+		rows[i] = projRow
+	}
+	return ResultSet{
+		Columns: t.store.FilterColumns(columnProj),
+		Rows:    rows,
+	}, nil
+}
+
+func (t *Table) SetRows(columns []string, locations []Location, values [][]Value) (int, error) {
+	columnProj, err := t.store.Projection(columns...)
+	if err != nil {
+		return 0, err
+	}
+	for i, loc := range locations {
+		rowInd, err := t.Indexer.ToIndex(loc)
+		if err != nil {
+			return i, err
+		}
+		rawRow, err := t.store.GetRowAt(rowInd)
+		if err != nil {
+			return i, err
+		}
+
+		for vInd, c := range columnProj {
+			copy(rawRow[c.start:], values[i][vInd])
+		}
+		err = t.store.SetRowAt(rowInd, rawRow)
+		if err != nil {
+			return i, err
+		}
+	}
+	return len(locations), nil
 }
