@@ -259,6 +259,14 @@ func (s *Store) GetRowAt(index int) (Row, error) {
 	return s.file.GetChunk(pageIndex, rowOffset, s.rowSize)
 }
 
+// Cheat method when a store has only a single column and we don't need
+// to do any projection (because it's the only column)
+func (s *Store) GetValueAt(index int) (Value, error) {
+	pageIndex := index / s.rowsPerPage
+	rowOffset := (index % s.rowsPerPage) * s.rowSize
+	return s.file.GetChunk(pageIndex, rowOffset, s.rowSize)
+}
+
 func (s *Store) SetRowAt(index int, row Row) error {
 	pageIndex := index / s.rowsPerPage
 	rowOffset := (index % s.rowsPerPage) * s.rowSize

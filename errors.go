@@ -9,6 +9,20 @@ var (
 	ErrZeroColumns = errors.New("cannot create a table with zero columns")
 )
 
+type TableNotFoundError struct {
+	Table string
+}
+
+func NewTableNotFoundError(tableName string) TableNotFoundError {
+	return TableNotFoundError{
+		Table: tableName,
+	}
+}
+
+func (t TableNotFoundError) Error() string {
+	return fmt.Sprintf("table '%s' not found in database", t.Table)
+}
+
 type ColumnNotFoundError struct {
 	Store  string
 	Column string

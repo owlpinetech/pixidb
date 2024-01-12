@@ -6,9 +6,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const TableFileExt string = ".tbl.json"
+
+const (
+	ProjectionKey string = "projection"
+	CreatedAt     string = "created-at"
+)
 
 type ResultSet struct {
 	Columns []Column
@@ -34,6 +40,10 @@ func NewTable(path string, indexer LocationIndexer, columns []Column) (*Table, e
 		IndexerName: indexer.Name(),
 		Metadata:    map[string]string{},
 	}
+
+	created, _ := time.Now().UTC().MarshalText()
+	table.Metadata[ProjectionKey] = indexer.Name()
+	table.Metadata[CreatedAt] = string(created)
 
 	if err := table.saveTableMetadata(); err != nil {
 		return nil, err
