@@ -71,7 +71,17 @@ func (d *Database) Drop(tableName string) error {
 	return err
 }
 
-func (d *Database) Get(tableName string, columns []string, locations ...Location) (ResultSet, error) {
+func (d *Database) GetColumns(tableName string) ([]Column, error) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	if table, ok := d.tables[tableName]; !ok {
+		return nil, NewTableNotFoundError(tableName)
+	} else {
+		return table.store.ColumnSet, nil
+	}
+}
+
+func (d *Database) GetRows(tableName string, columns []string, locations ...Location) (ResultSet, error) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 	if table, ok := d.tables[tableName]; !ok {
@@ -81,7 +91,7 @@ func (d *Database) Get(tableName string, columns []string, locations ...Location
 	}
 }
 
-func (d *Database) Set(tableName string, columns []string, locations []Location, values [][]Value) (int, error) {
+func (d *Database) SetRows(tableName string, columns []string, locations []Location, values [][]Value) (int, error) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 	if table, ok := d.tables[tableName]; !ok {

@@ -21,16 +21,16 @@ func TestBasicCreate(t *testing.T) {
 		expectRowSize     int
 		expectRowsPerPage int
 	}{
-		{"simple", 1, []Column{NewColumn("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
+		{"simple", 1, []Column{NewColumnEncoded("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
 		{"twocolumn", 10, []Column{
-			NewColumn("one", ColumnTypeInt16, []byte{0, 1}),
-			NewColumn("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
+			NewColumnEncoded("one", ColumnTypeInt16, []byte{0, 1}),
+			NewColumnEncoded("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
 		}, 10, (os.Getpagesize() - ChecksumSize) / 10},
 		{"fourcolumn", 1000, []Column{
-			NewColumn("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
-			NewColumn("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
-			NewColumn("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
-			NewColumn("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
+			NewColumnEncoded("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
+			NewColumnEncoded("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
+			NewColumnEncoded("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
+			NewColumnEncoded("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
 		}, 16, (os.Getpagesize() - ChecksumSize) / 16},
 	}
 
@@ -76,16 +76,16 @@ func TestBasicOpen(t *testing.T) {
 		expectRowSize     int
 		expectRowsPerPage int
 	}{
-		{"simple", 1, []Column{NewColumn("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
+		{"simple", 1, []Column{NewColumnEncoded("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, 4, (os.Getpagesize() - ChecksumSize) / 4},
 		{"twocolumn", 10, []Column{
-			NewColumn("one", ColumnTypeInt16, []byte{0, 1}),
-			NewColumn("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
+			NewColumnEncoded("one", ColumnTypeInt16, []byte{0, 1}),
+			NewColumnEncoded("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
 		}, 10, (os.Getpagesize() - ChecksumSize) / 10},
 		{"fourcolumn", 1000, []Column{
-			NewColumn("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
-			NewColumn("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
-			NewColumn("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
-			NewColumn("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
+			NewColumnEncoded("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
+			NewColumnEncoded("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
+			NewColumnEncoded("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
+			NewColumnEncoded("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
 		}, 16, (os.Getpagesize() - ChecksumSize) / 16},
 	}
 
@@ -135,16 +135,16 @@ func TestBasicSetPersist(t *testing.T) {
 		columns []Column
 		setRow  []byte
 	}{
-		{"simple", 1, []Column{NewColumn("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, []byte{9, 9, 9, 9}},
+		{"simple", 1, []Column{NewColumnEncoded("hello", ColumnTypeInt32, []byte{1, 2, 3, 4})}, []byte{9, 9, 9, 9}},
 		{"twocolumn", 10, []Column{
-			NewColumn("one", ColumnTypeInt16, []byte{0, 1}),
-			NewColumn("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
+			NewColumnEncoded("one", ColumnTypeInt16, []byte{0, 1}),
+			NewColumnEncoded("two", ColumnTypeInt64, []byte{9, 8, 7, 1, 2, 3, 4, 5}),
 		}, []byte{7, 7, 4, 4, 5, 5, 6, 6, 7, 7}},
 		{"fourcolumn", 1000, []Column{
-			NewColumn("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
-			NewColumn("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
-			NewColumn("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
-			NewColumn("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
+			NewColumnEncoded("one", ColumnTypeInt32, []byte{0, 1, 2, 3}),
+			NewColumnEncoded("two", ColumnTypeInt32, []byte{5, 6, 7, 8}),
+			NewColumnEncoded("three", ColumnTypeInt32, []byte{4, 9, 2, 9}),
+			NewColumnEncoded("four", ColumnTypeInt32, []byte{6, 6, 6, 6}),
 		}, []byte{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4}},
 	}
 
