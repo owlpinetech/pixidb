@@ -219,3 +219,7 @@ func (t *Table) SetRows(columns []string, locations []Location, values [][]Value
 	}
 	return len(locations), nil
 }
+
+func (t *Table) Checkpoint() error {
+	return t.store.Checkpoint()
+}

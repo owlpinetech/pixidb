@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"golang.org/x/exp/maps"
 )
 
 type Database struct {
@@ -50,7 +52,7 @@ func OpenDatabase(dbPath string) (*Database, error) {
 	}, nil
 }
 
-func (d *Database) Create(tableName string, indexer LocationIndexer, columns []Column) error {
+func (d *Database) Create(tableName string, indexer LocationIndexer, columns ...Column) error {
 	table, err := NewTable(filepath.Join(d.dbPath, tableName), indexer, columns)
 	if err != nil {
 		return err
@@ -69,6 +71,12 @@ func (d *Database) Drop(tableName string) error {
 	defer d.lock.Unlock()
 	delete(d.tables, tableName)
 	return err
+}
+
+func (d *Database) GetTableNames() ([]string, error) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	return maps.Keys(d.tables), nil
 }
 
 func (d *Database) GetColumns(tableName string) ([]Column, error) {
@@ -123,4 +131,15 @@ func (d *Database) SetMetadata(tableName string, key string, value string) error
 	} else {
 		return table.SetMetadata(key, value)
 	}
+}
+
+func (d *Database) Checkpoint() error {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	for _, tbl := range d.tables {
+		if err := tbl.Checkpoint(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
