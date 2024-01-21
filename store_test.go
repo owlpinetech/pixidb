@@ -8,7 +8,11 @@ import (
 )
 
 func TestBasicCreate(t *testing.T) {
-	dir, err := os.MkdirTemp(".", "pixidb_store_basic_create")
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir, err := os.MkdirTemp(wd, "pixidb_store_basic_create")
 	if err != nil {
 		t.Fatal(err)
 	}
