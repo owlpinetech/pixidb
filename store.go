@@ -47,7 +47,7 @@ func NewStore(path string, rows int, columns []Column) (*Store, error) {
 	}
 
 	// make sure the directory exists
-	if err := os.MkdirAll(path, os.ModeDir); err != nil {
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return nil, err
 	}
 
