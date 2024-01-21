@@ -12,7 +12,7 @@ import (
 )
 
 func TestTableOpen(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_table_basic_open")
+	dir, err := os.MkdirTemp(".", "pixidb_table_basic_open")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestTableOpen(t *testing.T) {
 }
 
 func TestTableQuery(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_table_basic_query")
+	dir, err := os.MkdirTemp(".", "pixidb_table_basic_query")
 	if err != nil {
 		t.Fatal(err)
 	}

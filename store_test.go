@@ -8,7 +8,7 @@ import (
 )
 
 func TestBasicCreate(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_store_basic_create")
+	dir, err := os.MkdirTemp(".", "pixidb_store_basic_create")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestBasicCreate(t *testing.T) {
 }
 
 func TestBasicOpen(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_store_basic_open")
+	dir, err := os.MkdirTemp(".", "pixidb_store_basic_open")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestBasicOpen(t *testing.T) {
 }
 
 func TestBasicSetPersist(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_store_basic_set_persist")
+	dir, err := os.MkdirTemp(".", "pixidb_store_basic_set_persist")
 	if err != nil {
 		t.Fatal(err)
 	}

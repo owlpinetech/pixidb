@@ -9,7 +9,7 @@ import (
 )
 
 func TestOpenDatabase(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "pixidb_database_basic_open")
+	dir, err := os.MkdirTemp(".", "pixidb_database_basic_open")
 	if err != nil {
 		t.Fatal(err)
 	}
