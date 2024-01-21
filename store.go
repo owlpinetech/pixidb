@@ -84,7 +84,7 @@ func NewStore(path string, rows int, columns []Column) (*Store, error) {
 		return nil, err
 	}
 	metaFilePath := filepath.Join(path, name+MetadataFileExt)
-	metaFile, err := os.OpenFile(metaFilePath, os.O_RDWR|os.O_CREATE, 0666)
+	metaFile, err := os.Create(metaFilePath)
 	if err != nil {
 		return nil, err
 	}
