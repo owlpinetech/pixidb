@@ -16,7 +16,6 @@ type Database struct {
 
 func NewDatabase(dbPath string) (*Database, error) {
 	// make sure the directory exists
-	os.RemoveAll(dbPath)
 	if err := os.MkdirAll(dbPath, os.ModePerm); err != nil {
 		return nil, err
 	}
