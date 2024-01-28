@@ -61,8 +61,14 @@ func (p *Pagemaster) Initialize(pages int, page []byte) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
+	file, err := os.OpenFile(p.path, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	for i := 0; i < pages; i++ {
-		if err := p.writePage(i, page); err != nil {
+		if err := p.writePage(file, i, page); err != nil {
 			return err
 		}
 	}
@@ -178,7 +184,7 @@ func (p *Pagemaster) FlushPage(pageIndex int) error {
 	if !ok {
 		return nil
 	}
-	err := p.writePage(pageIndex, page.data)
+	err := p.openAndWritePage(pageIndex, page.data)
 	if err == nil {
 		page.dirty = true
 	}
@@ -195,7 +201,7 @@ func (p *Pagemaster) FlushAllPages() error {
 	defer p.lock.Unlock()
 	for id, page := range p.cache {
 		if page.dirty {
-			err := p.writePage(id, page.data)
+			err := p.openAndWritePage(id, page.data)
 			if err != nil {
 				return err
 			}
@@ -218,7 +224,7 @@ func (p *Pagemaster) loadPage(pageIndex int) (*Page, error) {
 	// load page into cache, clearing out room if necessary
 	if len(p.cache) > p.maxCache {
 		remPage := maps.Keys(p.cache)[0]
-		p.writePage(remPage, p.cache[remPage].data)
+		p.openAndWritePage(remPage, p.cache[remPage].data)
 		// TODO: make this into LRU/LFU/ARC cache to reduce nondeterministic thrashing
 		delete(p.cache, remPage)
 	}
@@ -240,13 +246,17 @@ func (p *Pagemaster) getPage(pageIndex int) (*Page, error) {
 	return page, nil
 }
 
-func (p *Pagemaster) writePage(pageIndex int, page []byte) error {
+func (p *Pagemaster) openAndWritePage(pageIndex int, page []byte) error {
 	file, err := os.OpenFile(p.path, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
+	return p.writePage(file, pageIndex, page)
+}
+
+func (p *Pagemaster) writePage(file *os.File, pageIndex int, page []byte) error {
 	if len(page) < p.pageSize {
 		fill := make([]byte, p.pageSize-len(page))
 		page = append(page, fill...)
