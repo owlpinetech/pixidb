@@ -78,6 +78,12 @@ func (d *Database) GetTableNames() ([]string, error) {
 	return maps.Keys(d.tables), nil
 }
 
+func (d *Database) Table(name string) *Table {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	return d.tables[name]
+}
+
 func (d *Database) GetColumns(tableName string) ([]Column, error) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
