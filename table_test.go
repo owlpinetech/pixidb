@@ -106,3 +106,68 @@ func TestTableQuery(t *testing.T) {
 		}
 	}
 }
+
+func TestTableSetGet(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "pixidb_table_set_get")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewProjectionlessIndexer(25, 25, true),
+		[]Column{{Name: "col1", Type: ColumnTypeInt32, Default: []byte{0, 0, 0, 3}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := tbl.GetRows([]string{"col1"}, GridLocation{X: 0, Y: 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0][0].AsInt32() != 3 {
+		t.Errorf("expected value to equal 3, got %d", res.Rows[0][0].AsInt32())
+	}
+
+	n, err := tbl.SetRows([]string{"col1"}, []Location{GridLocation{X: 0, Y: 0}}, [][]Value{{NewInt32Value(5)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Errorf("expected to only update one row, got %d", n)
+	}
+
+	// verify we see the updated value
+	res, err = tbl.GetRows([]string{"col1"}, GridLocation{X: 0, Y: 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0][0].AsInt32() != 5 {
+		t.Errorf("expected value to equal 5, got %d", res.Rows[0][0].AsInt32())
+	}
+
+	// verify that further gets on different pixels don't have an updated value
+	res, err = tbl.GetRows([]string{"col1"}, GridLocation{X: 1, Y: 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0][0].AsInt32() != 3 {
+		t.Errorf("expected unchanged value to equal 3, got %d", res.Rows[0][0].AsInt32())
+	}
+
+	res, err = tbl.GetRows([]string{"col1"}, GridLocation{X: 0, Y: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0][0].AsInt32() != 3 {
+		t.Errorf("expected unchanged value to equal 3, got %d", res.Rows[0][0].AsInt32())
+	}
+
+	// verify again that we see the updated value
+	res, err = tbl.GetRows([]string{"col1"}, GridLocation{X: 0, Y: 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0][0].AsInt32() != 5 {
+		t.Errorf("expected value to equal 5, got %d", res.Rows[0][0].AsInt32())
+	}
+}
