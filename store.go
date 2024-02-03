@@ -1,10 +1,8 @@
 package pixidb
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"io"
-	"math"
 	"os"
 	"path/filepath"
 )
@@ -225,56 +223,4 @@ func (s *Store) Projection(columns ...string) (Projection, error) {
 		}
 	}
 	return proj, nil
-}
-
-type Row []byte
-
-func (r Row) Project(proj Projection) []Value {
-	vals := make([]Value, len(proj))
-	for i, column := range proj {
-		vals[i] = Value(r[column.start : column.start+column.size])
-	}
-	return vals
-}
-
-type Value []byte
-
-func (v Value) AsInt8() int8 {
-	return int8(v[0])
-}
-
-func (v Value) AsUint8() uint8 {
-	return uint8(v[0])
-}
-
-func (v Value) AsInt16() int16 {
-	return int16(binary.BigEndian.Uint16(v))
-}
-
-func (v Value) AsUint16() uint16 {
-	return binary.BigEndian.Uint16(v)
-}
-
-func (v Value) AsInt32() int32 {
-	return int32(binary.BigEndian.Uint32(v))
-}
-
-func (v Value) AsUint32() uint32 {
-	return binary.BigEndian.Uint32(v)
-}
-
-func (v Value) AsInt64() int64 {
-	return int64(binary.BigEndian.Uint64(v))
-}
-
-func (v Value) AsUint64() uint64 {
-	return binary.BigEndian.Uint64(v)
-}
-
-func (v Value) AsFloat32() float32 {
-	return math.Float32frombits(binary.BigEndian.Uint32(v))
-}
-
-func (v Value) AsFloat64() float64 {
-	return math.Float64frombits(binary.BigEndian.Uint64(v))
 }
