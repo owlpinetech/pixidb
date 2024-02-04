@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/owlpinetech/flatsphere"
 	"github.com/owlpinetech/healpix"
 	"golang.org/x/exp/maps"
 )
@@ -22,10 +23,11 @@ func TestTableOpen(t *testing.T) {
 		name     string
 		indexer  LocationIndexer
 		metadata map[string]string
+		proj     flatsphere.Projection
 	}{
-		{"mercatortagless", NewMercatorCutoffIndexer(math.Pi/4, -math.Pi/4, 10, 10, true), map[string]string{}},
-		{"cyleqtags", NewCylindricalEquirectangularIndexer(0, 10, 10, true), map[string]string{"one": "fish", "two": "fish"}},
-		{"healpixtagged", NewFlatHealpixIndexer(2, healpix.NestScheme), map[string]string{"hello": "there"}},
+		{"mercatortagless", NewMercatorCutoffIndexer(math.Pi/4, -math.Pi/4, 10, 10, true), map[string]string{}, flatsphere.NewMercator()},
+		{"cyleqtags", NewCylindricalEquirectangularIndexer(0, 10, 10, true), map[string]string{"one": "fish", "two": "fish"}, flatsphere.NewCylindricalEqualArea(0)},
+		{"healpixtagged", NewFlatHealpixIndexer(2, healpix.NestScheme), map[string]string{"hello": "there"}, flatsphere.NewHEALPixStandard()},
 	}
 
 	for _, tc := range testCases {
@@ -51,8 +53,15 @@ func TestTableOpen(t *testing.T) {
 			if tbl.Indexer.Size() != orig.Indexer.Size() {
 				t.Errorf("expected table indexer size %d, got %d", orig.Indexer.Size(), tbl.Indexer.Size())
 			}
+			if tbl.Indexer.Projection() == nil {
+				t.Errorf("projection not present for deserialize table")
+			}
+
 			if reflect.TypeOf(orig.Indexer) != reflect.TypeOf(tbl.Indexer) {
 				t.Errorf("expected indexer type %T, got %T", orig.Indexer, tbl.Indexer)
+			}
+			if reflect.TypeOf(orig.Indexer.Projection()) != reflect.TypeOf(tbl.Indexer.Projection()) {
+				t.Errorf("expected indexer type %T, got %T", orig.Indexer.Projection(), tbl.Indexer.Projection())
 			}
 		})
 	}
