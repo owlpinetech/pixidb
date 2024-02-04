@@ -39,7 +39,7 @@ type Store struct {
 	rowsPerPage int                         // The precomputed number of rows in each disk page of the store
 }
 
-func NewStore(path string, rows int, columns []Column) (*Store, error) {
+func NewStore(path string, rows int, columns ...Column) (*Store, error) {
 	if len(columns) < 1 {
 		return nil, ErrZeroColumns
 	}

@@ -40,7 +40,7 @@ func TestBasicCreate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			store, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns)
+			store, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -95,7 +95,7 @@ func TestBasicOpen(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns)
+			_, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -154,7 +154,7 @@ func TestBasicSetPersist(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			store, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns)
+			store, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.columns...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -174,6 +174,58 @@ func TestBasicSetPersist(t *testing.T) {
 			compareRow(t, saved, saved.Rows-1, tc.setRow)
 			if saved.Rows > 2 {
 				compareRow(t, saved, saved.Rows/2, defRow)
+			}
+		})
+	}
+}
+
+func TestStoreColumnProjection(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "pixidb_store_projection")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	store, err := NewStore(filepath.Join(dir, "projections"), 1,
+		NewColumnInt16("col1", int16(3)),
+		NewColumnInt32("col2", int32(8)),
+		NewColumnInt8("col3", 7),
+		NewColumnFloat64("col4", 1.4),
+		NewColumnUint16("col5", 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testCases := []struct {
+		name    string
+		columns []string
+		expect  Projection
+	}{
+		{"firstcol", []string{"col1"}, []ColumnProjection{{0, 0, 2}}},
+		{"lastcol", []string{"col5"}, []ColumnProjection{{4, 15, 2}}},
+		{"middle", []string{"col2", "col3", "col4"}, []ColumnProjection{{1, 2, 4}, {2, 6, 1}, {3, 7, 8}}},
+		{"firstlast", []string{"col5", "col1"}, []ColumnProjection{{4, 15, 2}, {0, 0, 2}}},
+		{"doubled", []string{"col2", "col2"}, []ColumnProjection{{1, 2, 4}, {1, 2, 4}}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			proj, err := store.Projection(tc.columns...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for i, c := range proj {
+				expected := tc.expect[i]
+				if c.index != expected.index {
+					t.Errorf("expected column projection index %d, but got %d", expected.index, c.index)
+				}
+				if c.start != expected.start {
+					t.Errorf("expected column projection start %d, but got %d", expected.start, c.start)
+				}
+				if c.size != expected.size {
+					t.Errorf("expected column projection start %d, but got %d", expected.size, c.size)
+				}
 			}
 		})
 	}

@@ -18,7 +18,7 @@ type LocationIndexer interface {
 // either row-major or column-major storage of the data for particular access patterns.
 type ProjectionlessIndexer struct {
 	Width    int  `json:"width"`
-	Height   int  `json:"heigh"`
+	Height   int  `json:"height"`
 	RowMajor bool `json:"rowmajor"`
 }
 
@@ -66,7 +66,7 @@ type MercatorCutoffIndexer struct {
 	SouthCutoff  float64 `json:"southCutoff"`
 	southProj    float64 // precomputed projected south latitude
 	latRangeProj float64 // precomputed (North - South) latitude projected range
-	grid         ProjectionlessIndexer
+	Grid         ProjectionlessIndexer
 	proj         flatsphere.Mercator
 }
 
@@ -82,7 +82,7 @@ func NewMercatorCutoffIndexer(northCutoff float64, southCutoff float64, width in
 		SouthCutoff:  southCutoff,
 		southProj:    southY,
 		latRangeProj: northY - southY,
-		grid:         NewProjectionlessIndexer(width, height, rowMajor),
+		Grid:         NewProjectionlessIndexer(width, height, rowMajor),
 		proj:         flatsphere.NewMercator(),
 	}
 }
@@ -96,7 +96,7 @@ func (m MercatorCutoffIndexer) Projection() flatsphere.Projection {
 }
 
 func (m MercatorCutoffIndexer) Size() int {
-	return m.grid.Size()
+	return m.Grid.Size()
 }
 
 func (m MercatorCutoffIndexer) ToIndex(loc Location) (int, error) {
@@ -104,7 +104,7 @@ func (m MercatorCutoffIndexer) ToIndex(loc Location) (int, error) {
 	case IndexLocation:
 		return int(val), nil
 	case GridLocation:
-		return m.grid.ToIndex(loc)
+		return m.Grid.ToIndex(loc)
 	case SphericalLocation:
 		if val.Latitude > m.NorthCutoff || val.Latitude < m.SouthCutoff {
 			return -1, NewLocationOutOfBoundsError(loc)
@@ -113,8 +113,8 @@ func (m MercatorCutoffIndexer) ToIndex(loc Location) (int, error) {
 		return m.ToIndex(ProjectedLocation{x, y})
 	case ProjectedLocation:
 		bounds := m.proj.PlanarBounds()
-		xPix := ((val.X - bounds.XMin) / bounds.Width()) * float64(m.grid.Width-1)
-		yPix := ((val.Y - m.southProj) / m.latRangeProj) * float64(m.grid.Height-1)
+		xPix := ((val.X - bounds.XMin) / bounds.Width()) * float64(m.Grid.Width-1)
+		yPix := ((val.Y - m.southProj) / m.latRangeProj) * float64(m.Grid.Height-1)
 		return m.ToIndex(GridLocation{int(xPix), int(yPix)})
 	case RectangularLocation:
 		return m.ToIndex(val.ToSpherical())
@@ -129,7 +129,7 @@ func (m MercatorCutoffIndexer) ToIndex(loc Location) (int, error) {
 // consecutive x- or y-accesses are, but does not change where x,y coordinates refer to.
 type CylindricalEquirectangularIndexer struct {
 	Parallel float64 `json:"parallel"`
-	grid     ProjectionlessIndexer
+	Grid     ProjectionlessIndexer
 	proj     flatsphere.Equirectangular
 }
 
@@ -138,7 +138,7 @@ type CylindricalEquirectangularIndexer struct {
 func NewCylindricalEquirectangularIndexer(parallel float64, width int, height int, rowMajor bool) CylindricalEquirectangularIndexer {
 	return CylindricalEquirectangularIndexer{
 		Parallel: parallel,
-		grid:     NewProjectionlessIndexer(width, height, rowMajor),
+		Grid:     NewProjectionlessIndexer(width, height, rowMajor),
 		proj:     flatsphere.NewEquirectangular(parallel),
 	}
 }
@@ -152,7 +152,7 @@ func (c CylindricalEquirectangularIndexer) Projection() flatsphere.Projection {
 }
 
 func (c CylindricalEquirectangularIndexer) Size() int {
-	return c.grid.Size()
+	return c.Grid.Size()
 }
 
 func (c CylindricalEquirectangularIndexer) ToIndex(loc Location) (int, error) {
@@ -160,14 +160,14 @@ func (c CylindricalEquirectangularIndexer) ToIndex(loc Location) (int, error) {
 	case IndexLocation:
 		return int(val), nil
 	case GridLocation:
-		return c.grid.ToIndex(loc)
+		return c.Grid.ToIndex(loc)
 	case SphericalLocation:
 		x, y := c.proj.Project(val.Latitude, val.Longitude)
 		return c.ToIndex(ProjectedLocation{x, y})
 	case ProjectedLocation:
 		bounds := c.proj.PlanarBounds()
-		xPix := ((val.X - bounds.XMin) / bounds.Width()) * float64(c.grid.Width-1)
-		yPix := ((val.Y - bounds.YMin) / bounds.Height()) * float64(c.grid.Height-1)
+		xPix := ((val.X - bounds.XMin) / bounds.Width()) * float64(c.Grid.Width-1)
+		yPix := ((val.Y - bounds.YMin) / bounds.Height()) * float64(c.Grid.Height-1)
 		return c.ToIndex(GridLocation{int(xPix), int(yPix)})
 	case RectangularLocation:
 		return c.ToIndex(val.ToSpherical())

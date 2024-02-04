@@ -28,8 +28,8 @@ type Table struct {
 	Metadata    map[string]string `json:"metadata"`
 }
 
-func NewTable(path string, indexer LocationIndexer, columns []Column) (*Table, error) {
-	store, err := NewStore(path, indexer.Size(), columns)
+func NewTable(path string, indexer LocationIndexer, columns ...Column) (*Table, error) {
+	store, err := NewStore(path, indexer.Size(), columns...)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (t *Table) SetRows(columns []string, locations []Location, values [][]Value
 		}
 
 		for vInd, c := range columnProj {
-			copy(rawRow[c.start:], values[i][vInd])
+			copy(rawRow[c.start:c.start+c.size], values[i][vInd])
 		}
 		err = t.store.SetRowAt(rowInd, rawRow)
 		if err != nil {

@@ -19,6 +19,7 @@ func TestProjectionlessIndexerGrid(t *testing.T) {
 		{"rect wide column", 53, 24, false},
 		{"rect tall row", 25, 50, true},
 		{"rect tall column", 24, 53, false},
+		{"gebco grid", 86400, 43200, true},
 	}
 
 	for _, tc := range testCases {
@@ -27,13 +28,28 @@ func TestProjectionlessIndexerGrid(t *testing.T) {
 			checkInd(t, indexer, GridLocation{0, 0}, 0)
 			checkInd(t, indexer, GridLocation{tc.width - 1, tc.height - 1}, tc.width*tc.height-1)
 			if tc.rowMajor {
+				checkInd(t, indexer, GridLocation{1, 0}, 1)
 				checkInd(t, indexer, GridLocation{tc.width - 1, 0}, tc.width-1)
 				checkInd(t, indexer, GridLocation{0, tc.height - 1}, tc.width*(tc.height-1))
 			} else {
+				checkInd(t, indexer, GridLocation{0, 1}, 1)
 				checkInd(t, indexer, GridLocation{0, tc.height - 1}, tc.height-1)
 				checkInd(t, indexer, GridLocation{tc.width - 1, 0}, (tc.width-1)*tc.height)
 			}
 		})
+	}
+
+	indexer := NewProjectionlessIndexer(10, 10, true)
+	for i := 0; i < indexer.Size(); i++ {
+		x := i % 10
+		y := i / 10
+		ind, err := indexer.ToIndex(GridLocation{X: x, Y: y})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ind != i {
+			t.Errorf("expected to see index %d at %d,%d, but got %d", i, x, y, ind)
+		}
 	}
 }
 

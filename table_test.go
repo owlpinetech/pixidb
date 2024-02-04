@@ -30,7 +30,7 @@ func TestTableOpen(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			orig, err := NewTable(filepath.Join(dir, tc.name), tc.indexer, []Column{{Name: "dummy", Type: ColumnTypeFloat32, Default: []byte{1, 2, 3, 4}}})
+			orig, err := NewTable(filepath.Join(dir, tc.name), tc.indexer, Column{Name: "dummy", Type: ColumnTypeFloat32, Default: []byte{1, 2, 3, 4}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -48,6 +48,9 @@ func TestTableOpen(t *testing.T) {
 			if tbl.IndexerName != orig.IndexerName {
 				t.Errorf("expected table indexer name %s, got %s", orig.IndexerName, tbl.IndexerName)
 			}
+			if tbl.Indexer.Size() != orig.Indexer.Size() {
+				t.Errorf("expected table indexer size %d, got %d", orig.Indexer.Size(), tbl.Indexer.Size())
+			}
 			if reflect.TypeOf(orig.Indexer) != reflect.TypeOf(tbl.Indexer) {
 				t.Errorf("expected indexer type %T, got %T", orig.Indexer, tbl.Indexer)
 			}
@@ -63,9 +66,8 @@ func TestTableQuery(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewFlatHealpixIndexer(2, healpix.NestScheme),
-		[]Column{
-			{Name: "col1", Type: ColumnTypeInt32, Default: []byte{0, 0, 0, 3}},
-			{Name: "col2", Type: ColumnTypeInt16, Default: []byte{0, 6}}})
+		Column{Name: "col1", Type: ColumnTypeInt32, Default: []byte{0, 0, 0, 3}},
+		Column{Name: "col2", Type: ColumnTypeInt16, Default: []byte{0, 6}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,8 +116,8 @@ func TestTableSetGet(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewProjectionlessIndexer(25, 25, true),
-		[]Column{{Name: "col1", Type: ColumnTypeInt32, Default: []byte{0, 0, 0, 3}}})
+	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewCylindricalEquirectangularIndexer(0, 10, 10, true),
+		Column{Name: "col1", Type: ColumnTypeInt32, Default: []byte{0, 0, 0, 3}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,5 +171,111 @@ func TestTableSetGet(t *testing.T) {
 	}
 	if res.Rows[0][0].AsInt32() != 5 {
 		t.Errorf("expected value to equal 5, got %d", res.Rows[0][0].AsInt32())
+	}
+
+	// set the middle pixel
+	n, err = tbl.SetRows([]string{"col1"}, []Location{GridLocation{X: 5, Y: 5}}, [][]Value{{NewInt32Value(8)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Errorf("expected to only update one row, got %d", n)
+	}
+
+	// verify again that we see the updated value
+	res, err = tbl.GetRows([]string{"col1"}, GridLocation{X: 5, Y: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0][0].AsInt32() != 8 {
+		t.Errorf("expected value to equal 8, got %d", res.Rows[0][0].AsInt32())
+	}
+}
+
+func TestSmallIterateGetSetGet(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "pixidb_table_set_get")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewCylindricalEquirectangularIndexer(0, 10, 10, true),
+		Column{Name: "col1", Type: ColumnTypeInt16, Default: NewInt16Value(math.MaxInt16)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < tbl.store.Rows; i++ {
+		loc := GridLocation{X: i % 10, Y: i / 10}
+
+		results, err := tbl.GetRows([]string{"col1"}, loc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if results.Rows[0][0].AsInt16() != math.MaxInt16 {
+			t.Errorf("expected anti-set value to max-int, got %d", results.Rows[0][0].AsInt16())
+		}
+
+		n, err := tbl.SetRows([]string{"col1"}, []Location{loc}, [][]Value{{NewInt16Value(int16(i))}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n != 1 {
+			t.Errorf("expected to only set 1 row, but set %d", n)
+		}
+
+		results, err = tbl.GetRows([]string{"col1"}, loc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if results.Rows[0][0].AsInt16() != int16(i) {
+			t.Errorf("expected post-set value to max-int, got %d", results.Rows[0][0].AsInt16())
+		}
+	}
+}
+
+func TestTableSetAllPersist(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "pixidb_table_set_get")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	tbl, err := NewTable(filepath.Join(dir, "querytbl"), NewCylindricalEquirectangularIndexer(0, 10, 10, true),
+		Column{Name: "col1", Type: ColumnTypeInt16, Default: NewInt16Value(math.MaxInt16)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < tbl.store.Rows; i++ {
+		loc := GridLocation{X: i % 10, Y: i / 10}
+
+		n, err := tbl.SetRows([]string{"col1"}, []Location{loc}, [][]Value{{NewInt16Value(int16(i))}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n != 1 {
+			t.Errorf("expected to only set 1 row, but set %d", n)
+		}
+	}
+
+	if err = tbl.Checkpoint(); err != nil {
+		t.Fatal(err)
+	}
+
+	opened, err := OpenTable(filepath.Join(dir, "querytbl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < opened.store.Rows; i++ {
+		loc := GridLocation{X: i % 10, Y: i / 10}
+
+		rs, err := opened.GetRows([]string{"col1"}, loc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if rs.Rows[0][0].AsInt16() != int16(i) {
+			t.Errorf("expected to get %d at index %d, but got %d", i, i, rs.Rows[0][0].AsInt16())
+		}
 	}
 }

@@ -52,7 +52,7 @@ func OpenDatabase(dbPath string) (*Database, error) {
 }
 
 func (d *Database) Create(tableName string, indexer LocationIndexer, columns ...Column) error {
-	table, err := NewTable(filepath.Join(d.dbPath, tableName), indexer, columns)
+	table, err := NewTable(filepath.Join(d.dbPath, tableName), indexer, columns...)
 	if err != nil {
 		return err
 	}
