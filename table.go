@@ -220,6 +220,14 @@ func (t *Table) SetRows(columns []string, locations []Location, values [][]Value
 	return len(locations), nil
 }
 
+func (t *Table) SetValue(column string, location Location, value Value) error {
+	rowInd, err := t.Indexer.ToIndex(location)
+	if err != nil {
+		return err
+	}
+	return t.store.SetValueAt(column, rowInd, value)
+}
+
 func (t *Table) Checkpoint() error {
 	return t.store.Checkpoint()
 }

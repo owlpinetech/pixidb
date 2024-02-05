@@ -179,6 +179,51 @@ func TestBasicSetPersist(t *testing.T) {
 	}
 }
 
+func TestSetValuePersist(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "pixidb_store_set_value_persist")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	testCases := []struct {
+		name   string
+		rows   int
+		column Column
+		setRow []byte
+	}{
+		{"simple", 1, NewColumnInt32("one", 3), []byte{0, 0, 0, 9}},
+		{"twocolumn", 10, NewColumnInt16("one", 2), []byte{0, 7}},
+		{"fourcolumn", 1000, NewColumnInt8("one", 4), []byte{90}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store, err := NewStore(filepath.Join(dir, tc.name), tc.rows, tc.column)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			store.SetValueAt("one", 0, tc.setRow)
+			store.SetValueAt("one", store.Rows-1, tc.setRow)
+			store.Checkpoint()
+
+			saved, err := OpenStore(filepath.Join(dir, tc.name))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defRow := store.DefaultRow()
+
+			compareRow(t, saved, 0, tc.setRow)
+			compareRow(t, saved, saved.Rows-1, tc.setRow)
+			if saved.Rows > 2 {
+				compareRow(t, saved, saved.Rows/2, defRow)
+			}
+		})
+	}
+}
+
 func TestStoreColumnProjection(t *testing.T) {
 	dir, err := os.MkdirTemp(".", "pixidb_store_projection")
 	if err != nil {

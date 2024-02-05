@@ -204,6 +204,13 @@ func (s *Store) SetRowAt(index int, row Row) error {
 	return s.file.SetChunk(pageIndex, rowOffset, row)
 }
 
+func (s *Store) SetValueAt(column string, index int, val Value) error {
+	pageIndex := index / s.rowsPerPage
+	rowOffset := (index % s.rowsPerPage) * s.rowSize
+	columnOffset := rowOffset + s.columnMap[column].start
+	return s.file.SetChunk(pageIndex, columnOffset, val)
+}
+
 func (s *Store) Checkpoint() error {
 	return s.file.FlushAllPages()
 }
